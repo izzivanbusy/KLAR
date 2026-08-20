@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--s8) var(--gutter);
+    }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: var(--s10) var(--s10);
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-logo {
+      font-size: 22px; font-weight: 800; letter-spacing: -.04em;
+      color: var(--text); display: inline-flex; align-items: center;
+      gap: 3px; margin-bottom: var(--s8); text-decoration: none;
+    }
+    .login-logo-dot { width:6px; height:6px; background:var(--accent); border-radius:50%; margin-bottom:8px; }
+    .login-form { display:flex; flex-direction:column; gap:var(--s5); }
+    .auth-link { font-size: 14px; color: var(--text-muted); text-align: center; }
+    .auth-link a { color: var(--accent); font-weight: 600; text-decoration: underline; }
+    .forgot-link { font-size: 13px; color: var(--text-subtle); text-align: right; display: block; margin-top: var(--s2); }
+    .forgot-link:hover { color: var(--accent); }
+
+    @media (max-width: 480px) {
+      .login-card { padding: var(--s8) var(--s6); border-radius: var(--r-lg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+
+    <a href="/" class="login-logo">
+      Klar<span class="login-logo-dot" aria-hidden="true"></span>
+    </a>
+
+    <h1 class="h-md">Welcome back</h1>
+    <p class="body-sm mt-2">Log in to continue your German course.</p>
+
+    <form class="login-form mt-8" id="loginForm" novalidate>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email</label>
+        <input class="input" type="email" id="email" name="email"
+               placeholder="anna@example.com" autocomplete="email" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="input" type="password" id="password" name="password"
+               placeholder="Your password" autocomplete="current-password" required>
+        <a href="/forgot-password.html" class="forgot-link">Forgot password?</a>
+      </div>
+
+      <div id="errorMsg" class="form-error" style="display:none"></div>
+
+      <button type="submit" class="btn btn--primary btn--full btn--lg" id="submitBtn">
+        Log in →
+      </button>
+
+      <p class="auth-link">
+        Don't have an account? <a href="/register.html">Create one</a>
+      </p>
+
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+(async () => {
+  await Klar.redirectIfAuth();
+
+  const form    = document.getElementById('loginForm');
+  const errorEl = document.getElementById('errorMsg');
+  const btn     = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+
+    const email    = form.email.value.trim();
+    const password = form.password.value;
+
+    if (!email || !password) {
+      errorEl.textContent = 'Please fill in all fields.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    Klar.btnLoading(btn, 'Logging in…');
+
+    const sb = Klar.getSupabase();
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errorEl.textContent = error.message === 'Invalid login credentials'
+        ? 'Incorrect email or password. Please try again.'
+        : error.message;
+      errorEl.style.display = 'block';
+      Klar.btnDone(btn);
+      return;
+    }
+
+    window.location.href = '/dashboard.html';
+  });
+})();
+</script>
+
+</body>
+</html>

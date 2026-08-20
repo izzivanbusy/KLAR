@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    .admin-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height:calc(100vh - 64px); }
+    .admin-sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: var(--s6);
+      display: flex; flex-direction: column; gap: var(--s2);
+    }
+    .admin-sidebar-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-subtle); margin-bottom:var(--s2); }
+    .sidebar-btn {
+      display: flex; align-items: center; gap: var(--s3);
+      padding: var(--s3) var(--s4); border-radius: var(--r);
+      font-size:14px; font-weight:500; color:var(--text-muted);
+      cursor:pointer; transition: background var(--t), color var(--t); width:100%; text-align:left;
+    }
+    .sidebar-btn:hover, .sidebar-btn.active { background:var(--surface-2); color:var(--text); }
+    .sidebar-btn.active { font-weight:600; }
+    .sidebar-btn .icon { font-size:16px; }
+
+    .admin-main { padding: var(--s8); overflow-y: auto; }
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+
+    .lessons-list { display:flex; flex-direction:column; gap:var(--s3); margin-top:var(--s5); }
+    .lesson-row {
+      display:flex; align-items:center; justify-content:space-between; gap:var(--s4);
+      background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+      padding:var(--s4) var(--s5); transition:border-color var(--t);
+    }
+    .lesson-row:hover { border-color:var(--border-strong); }
+    .lesson-row__left { flex:1; min-width:0; }
+    .lesson-row__num  { font-size:12px; color:var(--text-subtle); font-weight:500; margin-bottom:2px; }
+    .lesson-row__title { font-size:14px; font-weight:600; color:var(--text); }
+    .lesson-row__right { display:flex; align-items:center; gap:var(--s2); flex-shrink:0; }
+
+    .publish-toggle {
+      display:flex; align-items:center; gap:var(--s2);
+      font-size:12px; font-weight:600; cursor:pointer;
+      padding:4px 10px; border-radius:20px; border:none;
+      transition:all var(--t);
+    }
+    .publish-toggle--on  { background:var(--green-lt); color:var(--green); }
+    .publish-toggle--off { background:var(--surface-2); color:var(--text-subtle); }
+
+    /* Lesson edit form */
+    .edit-panel {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--r-xl); padding:var(--s8); max-width:720px;
+      margin-top:var(--s5);
+    }
+    .edit-form { display:flex; flex-direction:column; gap:var(--s5); }
+    .form-2col { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); }
+
+    .materials-list { display:flex; flex-direction:column; gap:var(--s3); margin-top:var(--s4); }
+    .material-row {
+      display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+      border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--s3) var(--s4);
+    }
+    .material-row__info { flex:1; min-width:0; }
+    .material-row__title { font-size:13px; font-weight:600; color:var(--text); }
+    .material-row__url   { font-size:12px; color:var(--text-subtle); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px; }
+
+    .add-material-form {
+      background:var(--surface-2); border:1px solid var(--border);
+      border-radius:var(--r-lg); padding:var(--s5);
+      margin-top:var(--s4); display:none;
+    }
+    .add-material-form.open { display:block; }
+
+    /* Upload progress */
+    .upload-progress { display:none; align-items:center; gap:var(--s3); font-size:13px; color:var(--text-muted); }
+    .upload-progress.visible { display:flex; }
+    .upload-bar-wrap { flex:1; background:var(--border); border-radius:20px; height:4px; }
+    .upload-bar-fill { height:100%; background:var(--accent); border-radius:20px; width:0%; transition:width 200ms; }
+
+    @media (max-width:760px) {
+      .admin-layout { grid-template-columns:1fr; }
+      .admin-sidebar { display:none; }
+      .form-2col { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-nav-mount"></div>
+
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <div class="admin-sidebar">
+    <div class="admin-sidebar-title">Admin</div>
+    <button class="sidebar-btn active" onclick="showPanel('lessons')" id="btn-lessons">
+      <span class="icon">📚</span> All Lessons
+    </button>
+    <button class="sidebar-btn" onclick="showPanel('create')" id="btn-create">
+      <span class="icon">➕</span> Create Lesson
+    </button>
+    <button class="sidebar-btn" onclick="showPanel('stats')" id="btn-stats">
+      <span class="icon">📊</span> Overview
+    </button>
+  </div>
+
+  <!-- Main content -->
+  <div class="admin-main">
+
+    <!-- ── All lessons panel ── -->
+    <div class="admin-panel active" id="panel-lessons">
+      <h1 class="h-md">All Lessons</h1>
+      <p class="body-sm mt-2">Click a lesson to edit it. Toggle to publish/unpublish.</p>
+      <div class="lessons-list" id="lessonsList">
+        <div class="skeleton" style="height:64px;border-radius:12px;"></div>
+        <div class="skeleton" style="height:64px;border-radius:12px;"></div>
+        <div class="skeleton" style="height:64px;border-radius:12px;"></div>
+      </div>
+    </div>
+
+    <!-- ── Create lesson panel ── -->
+    <div class="admin-panel" id="panel-create">
+      <h1 class="h-md">Create Lesson</h1>
+      <p class="body-sm mt-2">New lessons are saved as drafts. Publish when ready.</p>
+      <div class="edit-panel mt-5">
+        <form class="edit-form" id="createForm" onsubmit="createLesson(event)">
+          <div class="form-2col">
+            <div class="form-group">
+              <label class="form-label" for="c-num">Lesson number</label>
+              <input class="input" type="number" id="c-num" min="1" max="20" placeholder="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="c-level">Level</label>
+              <select class="input" id="c-level" required>
+                <option value="">Select level</option>
+                <option value="A0">A0</option>
+                <option value="A1">A1</option>
+                <option value="A1.2">A1.2</option>
+                <option value="A2">A2</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="c-title">Lesson title</label>
+            <input class="input" type="text" id="c-title" placeholder="e.g. Hello, Germany! — Greetings and farewells" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="c-desc">Description</label>
+            <textarea class="input" id="c-desc" rows="3" placeholder="What will the student learn? This is shown to students and used by the AI tutor as context."></textarea>
+          </div>
+          <div class="form-2col">
+            <div class="form-group">
+              <label class="form-label" for="c-yt">YouTube URL</label>
+              <input class="input" type="url" id="c-yt" placeholder="https://youtube.com/watch?v=…">
+              <span class="form-hint">Paste any YouTube URL format. The player will embed automatically.</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="c-dur">Duration (minutes)</label>
+              <input class="input" type="number" id="c-dur" min="5" max="180" placeholder="45">
+            </div>
+          </div>
+          <div id="createError" class="form-error" style="display:none"></div>
+          <div style="display:flex;gap:var(--s3);">
+            <button type="submit" class="btn btn--primary" id="createBtn">Save as draft</button>
+            <button type="button" class="btn btn--ghost" onclick="showPanel('lessons')">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Edit lesson panel (dynamically populated) ── -->
+    <div class="admin-panel" id="panel-edit">
+      <div id="editContent">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- ── Overview panel ── -->
+    <div class="admin-panel" id="panel-stats">
+      <h1 class="h-md">Overview</h1>
+      <div id="statsContent" class="mt-6">
+        <div class="skeleton" style="height:200px;border-radius:16px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+let sb, currentUserEmail;
+
+(async () => {
+  const user = await Klar.requireAuth();
+  if (!user) return;
+
+  currentUserEmail = user.email;
+  const adminEmail = window.KLAR_CONFIG?.adminEmail;
+
+  if (!adminEmail || user.email !== adminEmail) {
+    document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:var(--s8);">
+        <div>
+          <div style="font-size:48px;margin-bottom:var(--s4);">🔒</div>
+          <h1 class="h-md">Access denied</h1>
+          <p class="body-md mt-3">This page is only accessible to the course admin.</p>
+          <a href="/dashboard.html" class="btn btn--primary mt-6">Go to dashboard</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  await Klar.renderAppNav('');
+  sb = Klar.getSupabase();
+
+  await loadLessons();
+  await loadStats();
+})();
+
+/* ── Panel switching ────────────────────────────────────── */
+function showPanel(name) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`panel-${name}`)?.classList.add('active');
+  document.getElementById(`btn-${name}`)?.classList.add('active');
+}
+
+/* ── Load lessons ───────────────────────────────────────── */
+async function loadLessons() {
+  const { data: lessons, error } = await sb
+    .from('lessons').select('*').order('lesson_number');
+
+  if (error) { document.getElementById('lessonsList').innerHTML = `<p class="form-error">${error.message}</p>`; return; }
+
+  if (!lessons?.length) {
+    document.getElementById('lessonsList').innerHTML = `
+      <div style="text-align:center;padding:var(--s12);">
+        <p class="body-md">No lessons yet.</p>
+        <button class="btn btn--primary mt-4" onclick="showPanel('create')">Create first lesson →</button>
+      </div>
+    `;
+    return;
+  }
+
+  document.getElementById('lessonsList').innerHTML = lessons.map(l => `
+    <div class="lesson-row" id="row-${l.id}">
+      <div class="lesson-row__left">
+        <div class="lesson-row__num">Lesson ${l.lesson_number} · <span class="badge ${Klar.levelBadgeClass(l.level)}">${Klar.escHtml(l.level)}</span></div>
+        <div class="lesson-row__title">${Klar.escHtml(l.title)}</div>
+      </div>
+      <div class="lesson-row__right">
+        <button class="publish-toggle ${l.is_published ? 'publish-toggle--on' : 'publish-toggle--off'}"
+                onclick="togglePublish('${l.id}', ${l.is_published})" id="pub-${l.id}">
+          ${l.is_published ? '● Published' : '○ Draft'}
+        </button>
+        <button class="btn btn--outline btn--sm" onclick="editLesson('${l.id}')">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteLesson('${l.id}', '${Klar.escHtml(l.title)}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── Toggle publish ─────────────────────────────────────── */
+async function togglePublish(id, current) {
+  const { error } = await sb.from('lessons').update({ is_published: !current }).eq('id', id);
+  if (error) { Klar.toast('Failed to update: ' + error.message, 'error'); return; }
+  const btn = document.getElementById(`pub-${id}`);
+  if (btn) {
+    btn.textContent    = !current ? '● Published' : '○ Draft';
+    btn.className      = `publish-toggle ${!current ? 'publish-toggle--on' : 'publish-toggle--off'}`;
+    btn.onclick        = () => togglePublish(id, !current);
+  }
+  Klar.toast(!current ? 'Lesson published.' : 'Lesson set to draft.', 'success');
+}
+
+/* ── Delete lesson ──────────────────────────────────────── */
+async function deleteLesson(id, title) {
+  if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+  const { error } = await sb.from('lessons').delete().eq('id', id);
+  if (error) { Klar.toast('Failed to delete: ' + error.message, 'error'); return; }
+  document.getElementById(`row-${id}`)?.remove();
+  Klar.toast('Lesson deleted.', 'success');
+}
+
+/* ── Create lesson ──────────────────────────────────────── */
+async function createLesson(e) {
+  e.preventDefault();
+  const btn    = document.getElementById('createBtn');
+  const errEl  = document.getElementById('createError');
+  errEl.style.display = 'none';
+
+  Klar.btnLoading(btn, 'Saving…');
+
+  const { data, error } = await sb.from('lessons').insert({
+    lesson_number: parseInt(document.getElementById('c-num').value),
+    title:         document.getElementById('c-title').value.trim(),
+    level:         document.getElementById('c-level').value,
+    description:   document.getElementById('c-desc').value.trim(),
+    youtube_url:   document.getElementById('c-yt').value.trim() || null,
+    duration_min:  parseInt(document.getElementById('c-dur').value) || 45,
+    is_published:  false,
+    order_index:   parseInt(document.getElementById('c-num').value),
+  }).select().single();
+
+  Klar.btnDone(btn);
+
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+
+  Klar.toast('Lesson created as draft.', 'success');
+  document.getElementById('createForm').reset();
+  await loadLessons();
+  showPanel('lessons');
+}
+
+/* ── Edit lesson ────────────────────────────────────────── */
+async function editLesson(id) {
+  showPanel('edit');
+  document.getElementById('editContent').innerHTML = `<div class="skeleton" style="height:400px;border-radius:16px;"></div>`;
+
+  const [lessonRes, materialsRes] = await Promise.all([
+    sb.from('lessons').select('*').eq('id', id).single(),
+    sb.from('lesson_materials').select('*').eq('lesson_id', id).order('order_index'),
+  ]);
+
+  const l = lessonRes.data;
+  const materials = materialsRes.data || [];
+
+  document.getElementById('editContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s6);">
+      <button class="btn btn--ghost btn--sm" onclick="showPanel('lessons')">← All lessons</button>
+      <h1 class="h-sm">Edit: Lesson ${l.lesson_number}</h1>
+    </div>
+
+    <div class="edit-panel">
+      <h2 class="h-sm mb-4" style="margin-bottom:var(--s5);">Lesson details</h2>
+      <form class="edit-form" onsubmit="saveLesson(event, '${l.id}')">
+        <div class="form-2col">
+          <div class="form-group">
+            <label class="form-label">Lesson number</label>
+            <input class="input" type="number" id="e-num" value="${l.lesson_number}" min="1" max="20" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Level</label>
+            <select class="input" id="e-level" required>
+              ${['A0','A1','A1.2','A2'].map(v => `<option value="${v}" ${l.level===v?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input class="input" type="text" id="e-title" value="${Klar.escHtml(l.title)}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="input" id="e-desc" rows="3">${Klar.escHtml(l.description || '')}</textarea>
+          <span class="form-hint">Shown to students and used by the AI tutor as lesson context.</span>
+        </div>
+        <div class="form-2col">
+          <div class="form-group">
+            <label class="form-label">YouTube URL</label>
+            <input class="input" type="url" id="e-yt" value="${Klar.escHtml(l.youtube_url || '')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (minutes)</label>
+            <input class="input" type="number" id="e-dur" value="${l.duration_min || 45}" min="5" max="180">
+          </div>
+        </div>
+        <div id="editError" class="form-error" style="display:none"></div>
+        <div style="display:flex;gap:var(--s3);">
+          <button type="submit" class="btn btn--primary" id="saveBtn">Save changes</button>
+          <button type="button" class="btn btn--ghost" onclick="showPanel('lessons')">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Materials section -->
+    <div class="edit-panel" style="margin-top:var(--s5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s5);">
+        <h2 class="h-sm">Materials</h2>
+        <button class="btn btn--outline btn--sm" onclick="toggleAddMaterial()">+ Add material</button>
+      </div>
+
+      <div class="add-material-form" id="addMaterialForm">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:var(--s4);">Add material</h3>
+        <div class="edit-form" style="gap:var(--s4);">
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select class="input" id="m-type" onchange="handleMaterialTypeChange()">
+              <option value="pdf">PDF document</option>
+              <option value="link">External link</option>
+              <option value="note">Lesson note</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="input" type="text" id="m-title" placeholder="e.g. Greetings vocabulary list">
+          </div>
+          <div class="form-group" id="m-file-group">
+            <label class="form-label">PDF file</label>
+            <input class="input" type="file" id="m-file" accept=".pdf" style="padding:8px;">
+            <div class="upload-progress" id="uploadProgress">
+              <div class="upload-bar-wrap"><div class="upload-bar-fill" id="uploadBar"></div></div>
+              <span id="uploadStatus">Uploading…</span>
+            </div>
+          </div>
+          <div class="form-group" id="m-url-group" style="display:none">
+            <label class="form-label">URL</label>
+            <input class="input" type="url" id="m-url" placeholder="https://…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description (optional)</label>
+            <input class="input" type="text" id="m-desc" placeholder="Brief description">
+          </div>
+          <div style="display:flex;gap:var(--s3);">
+            <button type="button" class="btn btn--primary btn--sm" onclick="addMaterial('${l.id}')">Add material</button>
+            <button type="button" class="btn btn--ghost btn--sm" onclick="toggleAddMaterial()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="materials-list" id="materialsList">
+        ${materials.length ? materials.map(m => renderMaterialRow(m)).join('') : `<p class="body-sm">No materials yet. Add a PDF, link or note.</p>`}
+      </div>
+    </div>
+  `;
+
+  document.getElementById(`btn-edit`)?.classList.add('active');
+}
+
+function renderMaterialRow(m) {
+  const icons = { pdf: '📄', link: '🔗', note: '📝' };
+  return `
+    <div class="material-row" id="mat-${m.id}">
+      <div class="material-row__info">
+        <div class="material-row__title">${icons[m.type] || '📎'} ${Klar.escHtml(m.title)}</div>
+        ${m.url ? `<div class="material-row__url">${Klar.escHtml(m.url)}</div>` : ''}
+      </div>
+      <button class="btn btn--ghost btn--sm" onclick="deleteMaterial('${m.id}')">Remove</button>
+    </div>
+  `;
+}
+
+/* ── Save lesson ────────────────────────────────────────── */
+async function saveLesson(e, id) {
+  e.preventDefault();
+  const btn   = document.getElementById('saveBtn');
+  const errEl = document.getElementById('editError');
+  errEl.style.display = 'none';
+  Klar.btnLoading(btn, 'Saving…');
+
+  const { error } = await sb.from('lessons').update({
+    lesson_number: parseInt(document.getElementById('e-num').value),
+    title:         document.getElementById('e-title').value.trim(),
+    level:         document.getElementById('e-level').value,
+    description:   document.getElementById('e-desc').value.trim(),
+    youtube_url:   document.getElementById('e-yt').value.trim() || null,
+    duration_min:  parseInt(document.getElementById('e-dur').value) || 45,
+    updated_at:    new Date().toISOString(),
+  }).eq('id', id);
+
+  Klar.btnDone(btn);
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+  Klar.toast('Lesson saved.', 'success');
+  await loadLessons();
+}
+
+/* ── Materials ──────────────────────────────────────────── */
+function toggleAddMaterial() {
+  const f = document.getElementById('addMaterialForm');
+  f.classList.toggle('open');
+}
+function handleMaterialTypeChange() {
+  const type = document.getElementById('m-type').value;
+  document.getElementById('m-file-group').style.display = type === 'pdf'  ? 'flex' : 'none';
+  document.getElementById('m-url-group').style.display  = type === 'link' ? 'flex' : 'none';
+  document.getElementById('m-file-group').style.flexDirection = 'column';
+}
+
+async function addMaterial(lessonId) {
+  const type  = document.getElementById('m-type').value;
+  const title = document.getElementById('m-title').value.trim();
+  const desc  = document.getElementById('m-desc').value.trim();
+
+  if (!title) { Klar.toast('Please enter a title.', 'error'); return; }
+
+  let url = null;
+
+  if (type === 'pdf') {
+    const file = document.getElementById('m-file').files[0];
+    if (!file) { Klar.toast('Please select a PDF file.', 'error'); return; }
+    url = await uploadPDF(file);
+    if (!url) return; // error already shown
+  } else if (type === 'link') {
+    url = document.getElementById('m-url').value.trim();
+    if (!url) { Klar.toast('Please enter a URL.', 'error'); return; }
+  }
+
+  const { data, error } = await sb.from('lesson_materials').insert({
+    lesson_id: lessonId, type, title, url, description: desc || null, order_index: Date.now(),
+  }).select().single();
+
+  if (error) { Klar.toast('Failed to add material: ' + error.message, 'error'); return; }
+
+  // Append to list
+  const list = document.getElementById('materialsList');
+  const empty = list.querySelector('p');
+  if (empty) empty.remove();
+  list.insertAdjacentHTML('beforeend', renderMaterialRow(data));
+
+  // Reset form
+  document.getElementById('m-title').value = '';
+  document.getElementById('m-url').value   = '';
+  document.getElementById('m-desc').value  = '';
+  document.getElementById('m-file').value  = '';
+  toggleAddMaterial();
+  Klar.toast('Material added.', 'success');
+}
+
+async function uploadPDF(file) {
+  const progress = document.getElementById('uploadProgress');
+  const bar      = document.getElementById('uploadBar');
+  const status   = document.getElementById('uploadStatus');
+
+  progress.classList.add('visible');
+  bar.style.width  = '20%';
+  status.textContent = 'Uploading…';
+
+  try {
+    const base64 = await fileToBase64(file);
+    bar.style.width = '60%';
+
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-email': currentUserEmail,
+      },
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, base64Data: base64 }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Upload failed');
+
+    bar.style.width      = '100%';
+    status.textContent   = 'Done!';
+    setTimeout(() => progress.classList.remove('visible'), 1200);
+    return data.url;
+
+  } catch (err) {
+    progress.classList.remove('visible');
+    Klar.toast('Upload failed: ' + err.message, 'error');
+    return null;
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function deleteMaterial(id) {
+  if (!confirm('Remove this material?')) return;
+  const { error } = await sb.from('lesson_materials').delete().eq('id', id);
+  if (error) { Klar.toast('Failed: ' + error.message, 'error'); return; }
+  document.getElementById(`mat-${id}`)?.remove();
+  Klar.toast('Material removed.', 'success');
+}
+
+/* ── Stats panel ────────────────────────────────────────── */
+async function loadStats() {
+  const [lessonsRes, progressRes] = await Promise.all([
+    sb.from('lessons').select('id,is_published'),
+    sb.from('user_progress').select('status'),
+  ]);
+
+  const lessons   = lessonsRes.data  || [];
+  const progress  = progressRes.data || [];
+  const published = lessons.filter(l => l.is_published).length;
+  const drafts    = lessons.filter(l => !l.is_published).length;
+  const completed = progress.filter(p => p.status === 'completed').length;
+  const started   = progress.filter(p => p.status === 'in_progress').length;
+
+  document.getElementById('statsContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s4);">
+      ${[
+        { val: published, lbl: 'Published lessons', col: 'var(--green)' },
+        { val: drafts,    lbl: 'Draft lessons',     col: 'var(--text-muted)' },
+        { val: completed, lbl: 'Completions',        col: 'var(--accent)' },
+        { val: started,   lbl: 'In progress',        col: 'var(--blue)' },
+      ].map(s => `
+        <div class="card" style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;letter-spacing:-.04em;color:${s.col};">${s.val}</div>
+          <div class="label-sm mt-2">${s.lbl}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="card mt-6">
+      <h2 class="h-sm">Quick tips</h2>
+      <ul style="margin-top:var(--s4);display:flex;flex-direction:column;gap:var(--s3);">
+        <li class="body-sm">📌 Lessons are shown to students only when <strong>Published</strong>.</li>
+        <li class="body-sm">🎥 Paste any YouTube URL — the video embeds automatically in the lesson.</li>
+        <li class="body-sm">📄 PDF files are uploaded to Supabase Storage and linked in the lesson.</li>
+        <li class="body-sm">🤖 The AI tutor uses your <strong>lesson description</strong> as context — write it clearly.</li>
+        <li class="body-sm">🔗 External links open in a new tab for the student.</li>
+      </ul>
+    </div>
+  `;
+}
+</script>
+
+</body>
+</html>

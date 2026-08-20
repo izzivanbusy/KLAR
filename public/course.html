@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    .course-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: var(--s6); flex-wrap: wrap;
+      padding-bottom: var(--s6); border-bottom: 1px solid var(--border);
+      margin-bottom: var(--s8);
+    }
+    .progress-summary {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: var(--s4) var(--s6);
+      min-width: 200px;
+    }
+    .progress-summary__nums { font-size: 22px; font-weight: 800; letter-spacing: -.03em; color: var(--text); }
+    .progress-summary__lbl  { font-size: 12px; color: var(--text-subtle); font-weight: 500; margin-bottom: var(--s3); }
+
+    .level-section { margin-bottom: var(--s10); }
+    .level-header {
+      display: flex; align-items: center; gap: var(--s3);
+      margin-bottom: var(--s5);
+    }
+    .level-title { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+    .level-desc  { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .lessons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--s4);
+    }
+
+    .lesson-card {
+      display: flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+      transition: border-color var(--t), box-shadow var(--t), transform var(--t);
+      text-decoration: none; color: inherit;
+      position: relative;
+    }
+    .lesson-card:hover:not(.lesson-card--locked) {
+      border-color: var(--accent-border);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+    .lesson-card--locked {
+      opacity: .6; cursor: not-allowed;
+    }
+    .lesson-card--current {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-lt);
+    }
+    .lesson-card--completed {
+      border-color: var(--green-border);
+    }
+
+    .lesson-card__body {
+      padding: var(--s5);
+      flex: 1;
+      display: flex; flex-direction: column; gap: var(--s2);
+    }
+    .lesson-card__top {
+      display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
+    }
+    .lesson-number { font-size: 12px; font-weight: 600; color: var(--text-subtle); }
+    .lesson-title  { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.35; }
+    .lesson-meta   { font-size: 12px; color: var(--text-subtle); display: flex; align-items: center; gap: var(--s3); }
+
+    .lesson-card__footer {
+      border-top: 1px solid var(--border);
+      padding: var(--s3) var(--s5);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .lesson-card--completed .lesson-card__footer { background: var(--green-lt); }
+    .lesson-card--current   .lesson-card__footer { background: var(--accent-lt); }
+
+    .lesson-status {
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .ls-completed { color: var(--green); }
+    .ls-current   { color: var(--accent); }
+    .ls-locked    { color: var(--text-subtle); }
+
+    .current-pill {
+      position: absolute; top: -1px; right: var(--s4);
+      background: var(--accent); color: #fff;
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; padding: 3px 10px;
+      border-radius: 0 0 8px 8px;
+    }
+
+    @media (max-width: 600px) {
+      .lessons-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-nav-mount"></div>
+
+<main class="page-wrap">
+  <div class="container">
+
+    <div class="course-header">
+      <div>
+        <h1 class="h-lg">German A0 → A2</h1>
+        <p class="body-md mt-2">20 lessons · 4 months · ~1 hour per day</p>
+      </div>
+      <div class="progress-summary" id="progressSummary">
+        <div class="progress-summary__lbl">Your progress</div>
+        <div class="progress-summary__nums" id="progressNums">— / 20</div>
+        <div class="progress-bar-wrap mt-3">
+          <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="courseContent">
+      <!-- Skeleton -->
+      <div class="skeleton" style="height:300px;border-radius:16px;"></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+(async () => {
+  const user = await Klar.requireAuth();
+  if (!user) return;
+
+  await Klar.renderAppNav('course');
+
+  const sb = Klar.getSupabase();
+
+  const [lessonsRes, progressRes] = await Promise.all([
+    sb.from('lessons').select('*').eq('is_published', true).order('lesson_number'),
+    sb.from('user_progress').select('*').eq('user_id', user.id),
+  ]);
+
+  const lessons  = lessonsRes.data  || [];
+  const progress = progressRes.data || [];
+
+  const progressMap  = {};
+  progress.forEach(p => { progressMap[p.lesson_id] = p.status; });
+
+  const completed     = progress.filter(p => p.status === 'completed').length;
+  const totalPublished = lessons.length;
+
+  document.getElementById('progressNums').textContent = `${completed} / ${totalPublished}`;
+  document.getElementById('progressFill').style.width = totalPublished
+    ? `${Math.round(completed / totalPublished * 100)}%`
+    : '0%';
+
+  // Group lessons by level
+  const levels = [
+    { key: 'A0',  label: 'A0',   desc: 'Complete beginner — build your first German foundations.' },
+    { key: 'A1',  label: 'A1',   desc: 'Basic communication in everyday situations.' },
+    { key: 'A1.2',label: 'A1.2', desc: 'Expanding your vocabulary and grammar.' },
+    { key: 'A2',  label: 'A2',   desc: 'Communicate in everyday and work situations.' },
+  ];
+
+  // Find the ID of the first non-completed lesson (current lesson)
+  const completedIds = new Set(progress.filter(p => p.status === 'completed').map(p => p.lesson_id));
+  const currentLesson = lessons.find(l => !completedIds.has(l.id));
+
+  let html = '';
+
+  for (const lvl of levels) {
+    const lvlLessons = lessons.filter(l => l.level === lvl.key);
+    if (!lvlLessons.length) continue;
+
+    html += `
+      <section class="level-section">
+        <div class="level-header">
+          <span class="badge ${Klar.levelBadgeClass(lvl.key)}">${lvl.label}</span>
+          <div>
+            <div class="level-title">${lvl.label}</div>
+            <div class="level-desc">${Klar.escHtml(lvl.desc)}</div>
+          </div>
+        </div>
+        <div class="lessons-grid">
+          ${lvlLessons.map(l => renderLessonCard(l, progressMap, currentLesson)).join('')}
+        </div>
+      </section>
+    `;
+  }
+
+  if (!html) {
+    html = `
+      <div style="text-align:center;padding:var(--s16) 0;">
+        <p class="body-lg">No lessons published yet.</p>
+        <p class="body-md mt-2">Check back soon — lessons are being added.</p>
+      </div>
+    `;
+  }
+
+  document.getElementById('courseContent').innerHTML = html;
+})();
+
+function renderLessonCard(lesson, progressMap, currentLesson) {
+  const status    = progressMap[lesson.id] || 'not_started';
+  const isCurrent = currentLesson?.id === lesson.id;
+  const isLocked  = false; // All published lessons are accessible (open model)
+
+  const cardClass = [
+    'lesson-card',
+    status === 'completed' ? 'lesson-card--completed' : '',
+    isCurrent ? 'lesson-card--current' : '',
+    isLocked  ? 'lesson-card--locked' : '',
+  ].filter(Boolean).join(' ');
+
+  const statusHtml = status === 'completed'
+    ? `<span class="lesson-status ls-completed">✓ Completed</span>`
+    : isCurrent
+      ? `<span class="lesson-status ls-current">◐ Continue</span>`
+      : `<span class="lesson-status ls-locked">○ Not started</span>`;
+
+  const currentPill = isCurrent ? `<div class="current-pill">Continue →</div>` : '';
+
+  const tag = `<a href="/lesson.html?id=${lesson.id}" class="${cardClass}" ${isLocked ? 'tabindex="-1" aria-disabled="true"' : ''}>`;
+
+  return `
+    ${tag}
+      ${currentPill}
+      <div class="lesson-card__body">
+        <div class="lesson-card__top">
+          <span class="lesson-number">Lesson ${lesson.lesson_number}</span>
+          <span class="badge ${Klar.levelBadgeClass(lesson.level)}">${Klar.escHtml(lesson.level)}</span>
+        </div>
+        <div class="lesson-title">${Klar.escHtml(lesson.title)}</div>
+        <div class="lesson-meta">
+          <span>~${lesson.duration_min || 45} min</span>
+        </div>
+      </div>
+      <div class="lesson-card__footer">
+        ${statusHtml}
+        ${!isLocked ? `<span style="font-size:13px;color:var(--accent);font-weight:600;">Open →</span>` : ''}
+      </div>
+    </a>
+  `;
+}
+</script>
+
+</body>
+</html>

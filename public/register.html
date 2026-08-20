@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .auth-left {
+      background: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: var(--s8);
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-left__logo {
+      font-size: 22px; font-weight: 800; letter-spacing: -.04em;
+      color: #F8F7F4; display: flex; align-items: center; gap: 4px;
+      text-decoration: none;
+    }
+    .auth-left__logo-dot { width:7px; height:7px; background:var(--accent); border-radius:50%; margin-bottom:8px; }
+    .auth-left__content { max-width: 380px; }
+    .auth-left__headline {
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 800; line-height: 1.1; letter-spacing: -.03em;
+      color: #F8F7F4; margin-bottom: var(--s4);
+    }
+    .auth-left__headline em { font-style: normal; color: var(--accent); }
+    .auth-left__sub { font-size: 16px; color: rgba(248,247,244,.6); line-height: 1.65; }
+    .auth-left__stats {
+      display: flex; gap: var(--s8);
+      padding-top: var(--s8); border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .auth-stat__val { font-size: 24px; font-weight: 800; letter-spacing: -.03em; color: #F8F7F4; }
+    .auth-stat__lbl { font-size: 12px; color: rgba(248,247,244,.4); margin-top: 2px; font-weight: 500; }
+    .auth-left__bg {
+      position: absolute; top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(201,82,26,.2) 0%, transparent 70%);
+    }
+
+    .auth-right {
+      display: flex; flex-direction: column; justify-content: center;
+      padding: var(--s12) var(--s12);
+      background: var(--bg);
+      overflow-y: auto;
+    }
+    .auth-form-wrap { max-width: 440px; width: 100%; margin: 0 auto; }
+
+    .auth-form { display: flex; flex-direction: column; gap: var(--s5); }
+
+    .radio-group--2col { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+
+    .form-divider {
+      display: flex; align-items: center; gap: var(--s3);
+      font-size: 12px; color: var(--text-subtle); font-weight: 500;
+    }
+    .form-divider::before, .form-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .auth-link { font-size: 14px; color: var(--text-muted); text-align: center; }
+    .auth-link a { color: var(--accent); font-weight: 600; text-decoration: underline; }
+
+    @media (max-width: 820px) {
+      .auth-page { grid-template-columns: 1fr; }
+      .auth-left { display: none; }
+      .auth-right { padding: var(--s8) var(--s6); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- Left — brand panel -->
+  <div class="auth-left">
+    <div class="auth-left__bg" aria-hidden="true"></div>
+    <a href="/" class="auth-left__logo">
+      Klar<span class="auth-left__logo-dot"></span>
+    </a>
+    <div class="auth-left__content">
+      <h1 class="auth-left__headline">
+        German from <em>A0 to A2</em><br>in 4 months.
+      </h1>
+      <p class="auth-left__sub">
+        25 structured lessons. Real-life practice. Smart feedback. Study at your own pace — no live classes, no teacher required.
+      </p>
+    </div>
+    <div class="auth-left__stats">
+      <div>
+        <div class="auth-stat__val">20</div>
+        <div class="auth-stat__lbl">Lessons</div>
+      </div>
+      <div>
+        <div class="auth-stat__val">4</div>
+        <div class="auth-stat__lbl">Months</div>
+      </div>
+      <div>
+        <div class="auth-stat__val">1h</div>
+        <div class="auth-stat__lbl">Per day</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right — form -->
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <h2 class="h-md">Create your account</h2>
+      <p class="body-sm mt-2">Start learning German today.</p>
+
+      <form class="auth-form mt-8" id="registerForm" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="displayName">Your name</label>
+          <input class="input" type="text" id="displayName" name="displayName"
+                 placeholder="Anna" autocomplete="given-name" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Your age</label>
+          <div class="radio-group radio-group--2col" role="radiogroup" aria-label="Age group">
+            <label class="radio-option"><input type="radio" name="ageGroup" value="under-18"> Under 18</label>
+            <label class="radio-option"><input type="radio" name="ageGroup" value="18-24"> 18 – 24</label>
+            <label class="radio-option"><input type="radio" name="ageGroup" value="25-34"> 25 – 34</label>
+            <label class="radio-option"><input type="radio" name="ageGroup" value="35-44"> 35 – 44</label>
+            <label class="radio-option"><input type="radio" name="ageGroup" value="45-54"> 45 – 54</label>
+            <label class="radio-option"><input type="radio" name="ageGroup" value="55+"> 55 +</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mother language</label>
+          <div class="radio-group radio-group--2col" role="radiogroup" aria-label="Mother language">
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="English"> English</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Russian"> Russian</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Ukrainian"> Ukrainian</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Arabic"> Arabic</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Turkish"> Turkish</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Spanish"> Spanish</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Polish"> Polish</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Hindi"> Hindi</label>
+            <label class="radio-option"><input type="radio" name="motherLanguage" value="Other"> Other</label>
+          </div>
+        </div>
+
+        <div class="form-divider">Account details</div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input class="input" type="email" id="email" name="email"
+                 placeholder="anna@example.com" autocomplete="email" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="input" type="password" id="password" name="password"
+                 placeholder="At least 8 characters" autocomplete="new-password" required minlength="8">
+          <span class="form-hint">At least 8 characters.</span>
+        </div>
+
+        <div id="errorMsg" class="form-error" style="display:none"></div>
+
+        <button type="submit" class="btn btn--primary btn--full btn--lg" id="submitBtn">
+          Create account →
+        </button>
+
+        <p class="auth-link">
+          Already have an account? <a href="/login.html">Log in</a>
+        </p>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Supabase + shared JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+(async () => {
+  // Already logged in? Go to dashboard
+  await Klar.redirectIfAuth();
+
+  const form    = document.getElementById('registerForm');
+  const errorEl = document.getElementById('errorMsg');
+  const btn     = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+
+    const displayName    = form.displayName.value.trim();
+    const email          = form.email.value.trim();
+    const password       = form.password.value;
+    const ageGroup       = form.querySelector('input[name="ageGroup"]:checked')?.value;
+    const motherLanguage = form.querySelector('input[name="motherLanguage"]:checked')?.value;
+
+    // Basic validation
+    if (!displayName) { showError('Please enter your name.'); return; }
+    if (!email)        { showError('Please enter your email.'); return; }
+    if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
+    if (!ageGroup)     { showError('Please select your age group.'); return; }
+    if (!motherLanguage) { showError('Please select your mother language.'); return; }
+
+    Klar.btnLoading(btn, 'Creating account…');
+
+    const sb = Klar.getSupabase();
+
+    // 1. Create auth user
+    const { data: authData, error: authError } = await sb.auth.signUp({
+      email, password,
+      options: {
+        data: { display_name: displayName }
+      }
+    });
+
+    if (authError) { showError(authError.message); Klar.btnDone(btn); return; }
+
+    // 2. Update profile with age + language (trigger creates the row)
+    const userId = authData.user?.id;
+    if (userId) {
+      await sb.from('user_profiles').upsert({
+        id: userId,
+        display_name: displayName,
+        age_group: ageGroup,
+        mother_language: motherLanguage,
+      });
+    }
+
+    Klar.toast('Account created! Welcome to Klar.', 'success');
+    setTimeout(() => { window.location.href = '/dashboard.html'; }, 800);
+  });
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+  }
+})();
+</script>
+
+</body>
+</html>

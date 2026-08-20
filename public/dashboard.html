@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: var(--s6);
+      margin-top: var(--s8);
+    }
+    .dash-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: var(--s6);
+    }
+    .dash-card--accent {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+    .dash-card--accent .body-md { color: rgba(255,255,255,.75); }
+
+    .greeting { font-size: clamp(24px, 3vw, 34px); font-weight: 800; letter-spacing: -.03em; }
+
+    .continue-card { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
+    .continue-lesson-info { flex: 1; }
+    .continue-lesson-badge { margin-bottom: var(--s2); }
+    .continue-lesson-title { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .continue-lesson-sub { font-size: 13px; color: rgba(255,255,255,.65); }
+
+    .btn--white-accent {
+      background: #fff; color: var(--accent); border-color: #fff; font-weight: 700;
+      transition: all var(--t);
+    }
+    .btn--white-accent:hover { background: #F8F7F4; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+
+    .progress-section { margin-top: var(--s4); }
+    .progress-meta { display: flex; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,.7); margin-bottom: var(--s2); }
+    .progress-bar-wrap--light { background: rgba(255,255,255,.2); }
+    .progress-bar-fill--white { background: #fff; }
+
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); margin-top: var(--s6);
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+      padding: var(--s4); text-align: center;
+    }
+    .stat-card__val { font-size: 26px; font-weight: 800; letter-spacing: -.03em; color: var(--text); }
+    .stat-card__lbl { font-size: 12px; color: var(--text-subtle); margin-top: 2px; font-weight: 500; }
+
+    .skill-card {
+      border-radius: var(--r); padding: var(--s3) var(--s4); margin-bottom: var(--s2);
+    }
+    .skill-card--green { background: var(--green-lt); }
+    .skill-card--blue  { background: var(--blue-lt); }
+    .skill-card--amber { background: var(--amber-lt); }
+
+    .skill-card__head {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: var(--s2);
+      display: flex; align-items: center; gap: var(--s2);
+    }
+    .skill-card--green .skill-card__head { color: var(--green); }
+    .skill-card--blue  .skill-card__head { color: var(--blue); }
+    .skill-card--amber .skill-card__head { color: var(--amber); }
+
+    .skill-list { display: flex; flex-direction: column; gap: 4px; }
+    .skill-list-item {
+      font-size: 13px; color: var(--text-muted);
+      display: flex; align-items: center; gap: var(--s2);
+    }
+
+    .goal-card {
+      background: var(--accent-lt); border: 1px solid var(--accent-border);
+      border-radius: var(--r-lg); padding: var(--s5);
+      display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+    }
+    .goal-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .goal-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    @media (max-width: 860px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 580px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .continue-card { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-nav-mount"></div>
+
+<main class="page-wrap">
+  <div class="container">
+
+    <!-- Header -->
+    <div id="dashHeader">
+      <div class="skeleton" style="height:36px;width:280px;border-radius:8px;"></div>
+      <div class="skeleton mt-3" style="height:18px;width:200px;border-radius:6px;"></div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card"><div class="skeleton" style="height:26px;width:40px;margin:0 auto;"></div></div>
+      <div class="stat-card"><div class="skeleton" style="height:26px;width:40px;margin:0 auto;"></div></div>
+      <div class="stat-card"><div class="skeleton" style="height:26px;width:40px;margin:0 auto;"></div></div>
+    </div>
+
+    <div class="dashboard-grid" id="dashGrid" style="display:none">
+
+      <!-- Left column -->
+      <div style="display:flex;flex-direction:column;gap:var(--s5);">
+
+        <!-- Continue card -->
+        <div class="dash-card dash-card--accent" id="continueCard">
+          <div class="continue-card">
+            <div class="continue-lesson-info">
+              <div class="continue-lesson-badge">
+                <span class="badge" id="continueBadge" style="background:rgba(255,255,255,.2);color:#fff;border:none;">A0</span>
+              </div>
+              <div class="continue-lesson-title" id="continueLessonTitle">Loading…</div>
+              <div class="continue-lesson-sub" id="continueLessonSub"></div>
+            </div>
+            <a href="#" class="btn btn--white-accent" id="continueLessonBtn">Continue →</a>
+          </div>
+          <div class="progress-section">
+            <div class="progress-meta">
+              <span id="progressLabel">0 / 20 lessons</span>
+              <span id="progressPct">0%</span>
+            </div>
+            <div class="progress-bar-wrap progress-bar-wrap--light">
+              <div class="progress-bar-fill progress-bar-fill--white" id="progressFill" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's goal -->
+        <div id="goalCard"></div>
+
+        <!-- Recent lessons -->
+        <div class="dash-card" id="recentCard">
+          <h2 class="h-sm">Your recent lessons</h2>
+          <div id="recentList" class="mt-4" style="display:flex;flex-direction:column;gap:var(--s3);">
+            <div class="skeleton" style="height:56px;border-radius:10px;"></div>
+            <div class="skeleton" style="height:56px;border-radius:10px;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column — learning memory -->
+      <div style="display:flex;flex-direction:column;gap:var(--s5);">
+        <div class="dash-card">
+          <h2 class="h-sm">Learning memory</h2>
+          <p class="body-sm mt-2">Based on your practice, not just completed lessons.</p>
+          <div id="skillStates" class="mt-4" style="display:flex;flex-direction:column;gap:var(--s2);">
+            <div class="skeleton" style="height:80px;border-radius:10px;"></div>
+            <div class="skeleton" style="height:80px;border-radius:10px;"></div>
+            <div class="skeleton" style="height:80px;border-radius:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+(async () => {
+  const user = await Klar.requireAuth();
+  if (!user) return;
+
+  await Klar.renderAppNav('dashboard');
+
+  const sb = Klar.getSupabase();
+  const displayName = user.user_metadata?.display_name || 'there';
+
+  // ── Load data ─────────────────────────────────────────────
+  const [profileRes, progressRes, lessonsRes] = await Promise.all([
+    Klar.getUserProfile(user.id),
+    sb.from('user_progress').select('*, lessons(*)').eq('user_id', user.id),
+    sb.from('lessons').select('id,lesson_number,title,level,duration_min').eq('is_published', true).order('lesson_number'),
+  ]);
+
+  const progress  = progressRes.data || [];
+  const lessons   = lessonsRes.data  || [];
+  const completed = progress.filter(p => p.status === 'completed');
+  const totalPublished = lessons.length || 20;
+
+  // ── Header ───────────────────────────────────────────────
+  const greeting = getGreeting();
+  document.getElementById('dashHeader').innerHTML = `
+    <h1 class="greeting">Hallo, ${Klar.escHtml(displayName)}.</h1>
+    <p class="body-md mt-2">Your goal: A0 → A2 in 4 months. ${greeting}</p>
+  `;
+
+  // ── Stats ────────────────────────────────────────────────
+  const inProgress = progress.filter(p => p.status === 'in_progress').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-card__val" style="color:var(--green)">${completed.length}</div>
+      <div class="stat-card__lbl">Completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__val" style="color:var(--accent)">${inProgress}</div>
+      <div class="stat-card__lbl">In progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__val">${totalPublished - completed.length}</div>
+      <div class="stat-card__lbl">Remaining</div>
+    </div>
+  `;
+
+  // ── Continue button ──────────────────────────────────────
+  // Find the first lesson that is not completed
+  const completedIds = new Set(completed.map(p => p.lesson_id));
+  const nextLesson   = lessons.find(l => !completedIds.has(l.id)) || lessons[0];
+
+  if (nextLesson) {
+    const pct = Math.round((completed.length / totalPublished) * 100);
+    document.getElementById('continueBadge').textContent = nextLesson.level;
+    document.getElementById('continueBadge').className   = `badge ${Klar.levelBadgeClass(nextLesson.level)}`;
+    document.getElementById('continueLessonTitle').textContent = `Lesson ${nextLesson.lesson_number}: ${nextLesson.title}`;
+    document.getElementById('continueLessonSub').textContent   = `~${nextLesson.duration_min || 45} min`;
+    document.getElementById('continueLessonBtn').href = `/lesson.html?id=${nextLesson.id}`;
+    document.getElementById('progressLabel').textContent = `${completed.length} / ${totalPublished} lessons`;
+    document.getElementById('progressPct').textContent   = `${pct}%`;
+    document.getElementById('progressFill').style.width  = `${pct}%`;
+  } else {
+    document.getElementById('continueCard').innerHTML = `
+      <div class="continue-card">
+        <div class="continue-lesson-info">
+          <div class="continue-lesson-title">🎉 Course complete!</div>
+          <div class="continue-lesson-sub">You finished all ${totalPublished} lessons.</div>
+        </div>
+        <a href="/course.html" class="btn btn--white-accent">Review course →</a>
+      </div>
+    `;
+  }
+
+  // ── Today's goal (hardcoded example — extend with real skill tracking later) ──
+  const goals = [
+    { skill: 'German word order', time: '10–15 min' },
+    { skill: 'Articles (der / die / das)', time: '10 min' },
+    { skill: 'Verb conjugation in present tense', time: '15 min' },
+  ];
+  const todayGoal = goals[new Date().getDay() % goals.length];
+
+  document.getElementById('goalCard').innerHTML = nextLesson ? `
+    <div class="goal-card">
+      <div>
+        <div class="goal-title">🎯 Today's goal</div>
+        <div class="goal-sub">${Klar.escHtml(todayGoal.skill)} · ${todayGoal.time}</div>
+      </div>
+      <a href="/lesson.html?id=${nextLesson.id}" class="btn btn--primary btn--sm">Start →</a>
+    </div>
+  ` : '';
+
+  // ── Recent lessons ───────────────────────────────────────
+  const recentProgress = [...progress]
+    .filter(p => p.lessons)
+    .sort((a, b) => new Date(b.started_at || 0) - new Date(a.started_at || 0))
+    .slice(0, 4);
+
+  document.getElementById('recentList').innerHTML = recentProgress.length ? recentProgress.map(p => {
+    const l = p.lessons;
+    const statusLabel = { completed: '✓ Completed', in_progress: '◐ In progress', not_started: 'Not started' }[p.status];
+    const statusColor = { completed: 'var(--green)', in_progress: 'var(--accent)', not_started: 'var(--text-subtle)' }[p.status];
+    return `
+      <a href="/lesson.html?id=${l.id}" style="display:flex;align-items:center;justify-content:space-between;
+         gap:var(--s4);padding:var(--s3) var(--s4);border:1px solid var(--border);border-radius:var(--r-lg);
+         transition:border-color var(--t),box-shadow var(--t);text-decoration:none;" class="card--hover">
+        <div>
+          <span class="badge ${Klar.levelBadgeClass(l.level)}" style="margin-bottom:4px;">${Klar.escHtml(l.level)}</span>
+          <div style="font-size:14px;font-weight:600;color:var(--text);">Lesson ${l.lesson_number}: ${Klar.escHtml(l.title)}</div>
+        </div>
+        <span style="font-size:12px;font-weight:600;color:${statusColor};white-space:nowrap;">${statusLabel}</span>
+      </a>
+    `;
+  }).join('') : `<p class="body-sm">Start your first lesson to see your progress here.</p>`;
+
+  // ── Learning memory (placeholder — extend with real skill tracking) ──
+  document.getElementById('skillStates').innerHTML = `
+    <div class="skill-card skill-card--green">
+      <div class="skill-card__head">🧠 Skills acquired</div>
+      <div class="skill-list" id="acquiredList">
+        ${completed.length > 0
+          ? `<div class="skill-list-item">✓ ${completed.length} lesson${completed.length > 1 ? 's' : ''} completed</div>`
+          : `<div class="skill-list-item">Complete your first lesson to start tracking.</div>`}
+      </div>
+    </div>
+    <div class="skill-card skill-card--amber">
+      <div class="skill-card__head">⚠️ Needs practice</div>
+      <div class="skill-list">
+        <div class="skill-list-item">! Use the AI chat in each lesson to get tracked feedback.</div>
+      </div>
+    </div>
+    <div class="skill-card skill-card--blue">
+      <div class="skill-card__head">🔄 In progress</div>
+      <div class="skill-list">
+        <div class="skill-list-item">◐ ${inProgress} lesson${inProgress !== 1 ? 's' : ''} started</div>
+      </div>
+    </div>
+  `;
+
+  // Show dashboard
+  document.getElementById('dashGrid').style.display = '';
+
+})();
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning — time to study!';
+  if (h < 17) return 'Good afternoon. Keep going.';
+  return 'Good evening. Even 30 minutes counts.';
+}
+</script>
+
+</body>
+</html>

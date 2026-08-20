@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson — Klar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/klar.css">
+  <style>
+    /* ── Layout ───────────────────────────────────────────── */
+    .lesson-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: var(--s6);
+      align-items: start;
+    }
+    .lesson-main { min-width: 0; }
+    .lesson-sidebar {
+      position: sticky; top: 80px;
+      display: flex; flex-direction: column; gap: var(--s4);
+    }
+
+    /* ── Breadcrumb ───────────────────────────────────────── */
+    .breadcrumb {
+      display: flex; align-items: center; gap: var(--s2);
+      font-size: 13px; color: var(--text-muted); margin-bottom: var(--s6);
+      flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--text-muted); }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb-sep { color: var(--border-strong); }
+
+    /* ── Lesson header ────────────────────────────────────── */
+    .lesson-header { margin-bottom: var(--s8); }
+    .lesson-meta-row {
+      display: flex; align-items: center; gap: var(--s3);
+      margin-bottom: var(--s3); flex-wrap: wrap;
+    }
+    .lesson-duration { font-size: 13px; color: var(--text-subtle); }
+    .lesson-title { font-size: clamp(22px, 3vw, 32px); font-weight: 800; letter-spacing: -.03em; }
+    .lesson-description { font-size: 16px; color: var(--text-muted); line-height: 1.65; margin-top: var(--s3); }
+
+    /* ── Sections ─────────────────────────────────────────── */
+    .lesson-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); overflow: hidden; margin-bottom: var(--s5);
+    }
+    .lesson-section__header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--s4) var(--s6); border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .lesson-section__title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; gap: var(--s3);
+    }
+    .section-icon {
+      width: 28px; height: 28px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; background: var(--surface);
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .lesson-section__body { padding: var(--s6); }
+
+    /* ── Video ────────────────────────────────────────────── */
+    .video-container {
+      position: relative; width: 100%; padding-top: 56.25%;
+      background: #000; border-radius: var(--r-lg); overflow: hidden;
+    }
+    .video-container iframe {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      border: none;
+    }
+    .video-placeholder {
+      position: absolute; top:0; left:0; width:100%; height:100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.5); gap: var(--s3);
+    }
+    .video-placeholder__icon { font-size: 48px; }
+    .video-placeholder__text { font-size: 14px; }
+
+    /* ── Materials ────────────────────────────────────────── */
+    .material-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--s4); padding: var(--s3) var(--s4);
+      border: 1px solid var(--border); border-radius: var(--r-lg);
+      margin-bottom: var(--s3); transition: border-color var(--t), box-shadow var(--t);
+    }
+    .material-item:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+    .material-item__left { display: flex; align-items: center; gap: var(--s3); flex: 1; min-width: 0; }
+    .material-icon {
+      width: 36px; height: 36px; border-radius: var(--r); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      background: var(--surface-2); border: 1px solid var(--border);
+    }
+    .material-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .material-desc  { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .material-actions { display: flex; gap: var(--s2); flex-shrink: 0; }
+
+    /* ── Complete button ──────────────────────────────────── */
+    .complete-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: var(--s6);
+      text-align: center;
+    }
+    .complete-section h3 { font-size: 18px; font-weight: 700; margin-bottom: var(--s2); }
+    .complete-section p  { font-size: 14px; color: var(--text-muted); margin-bottom: var(--s5); }
+
+    /* ── AI Chat sidebar ──────────────────────────────────── */
+    .chat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); overflow: hidden;
+      display: flex; flex-direction: column;
+      height: calc(100vh - 120px); max-height: 700px;
+    }
+    .chat-topbar {
+      padding: var(--s4) var(--s5); border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .chat-topbar__left { display: flex; align-items: center; gap: var(--s3); }
+    .chat-avatar-sm {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .chat-topbar__title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .chat-topbar__sub   { font-size: 11px; color: var(--text-subtle); }
+    .chat-online { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); font-weight: 600; }
+    .chat-online-dot { width:6px; height:6px; background:var(--green); border-radius:50%; animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: var(--s4);
+      display: flex; flex-direction: column; gap: var(--s3);
+      scroll-behavior: smooth;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .msg { display: flex; gap: var(--s2); align-items: flex-end; max-width: 85%; }
+    .msg--user { flex-direction: row-reverse; align-self: flex-end; }
+    .msg--ai   { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .msg-avatar--ai   { background: var(--accent); color: #fff; }
+    .msg-avatar--user { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .msg-bubble {
+      padding: var(--s3) var(--s4);
+      border-radius: var(--r-lg); font-size: 13px; line-height: 1.6;
+    }
+    .msg-bubble--ai {
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text); border-bottom-left-radius: 4px;
+    }
+    .msg-bubble--user {
+      background: var(--accent); color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-typing {
+      display: flex; gap: 4px; align-items: center; padding: var(--s2) var(--s3);
+    }
+    .typing-dot {
+      width: 6px; height: 6px; background: var(--text-muted);
+      border-radius: 50%; animation: typingPulse 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: .2s; }
+    .typing-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes typingPulse { 0%,80%,100%{opacity:.2;transform:scale(.8);} 40%{opacity:1;transform:scale(1);} }
+
+    .chat-welcome {
+      text-align: center; padding: var(--s8) var(--s4);
+      display: flex; flex-direction: column; align-items: center; gap: var(--s3);
+    }
+    .chat-welcome__icon { font-size: 36px; }
+    .chat-welcome__title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .chat-welcome__sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 240px; }
+
+    .chat-input-area {
+      border-top: 1px solid var(--border); padding: var(--s3) var(--s4);
+      background: var(--surface); flex-shrink: 0;
+    }
+    .chat-form { display: flex; gap: var(--s2); align-items: flex-end; }
+    .chat-textarea {
+      flex: 1; resize: none; border: 1.5px solid var(--border);
+      border-radius: var(--r); padding: 10px 12px;
+      font-size: 14px; line-height: 1.5; font-family: var(--font);
+      color: var(--text); background: var(--bg);
+      max-height: 120px; overflow-y: auto; transition: border-color var(--t);
+    }
+    .chat-textarea:focus { outline: none; border-color: var(--accent); }
+    .chat-textarea::placeholder { color: var(--text-subtle); }
+    .chat-send {
+      width: 38px; height: 38px; border-radius: var(--r);
+      background: var(--accent); color: #fff; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; transition: background var(--t), transform var(--t);
+      font-size: 16px;
+    }
+    .chat-send:hover { background: var(--accent-h); transform: scale(1.05); }
+    .chat-send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .chat-hint { font-size: 11px; color: var(--text-subtle); margin-top: var(--s2); text-align: center; }
+
+    /* ── Lesson nav ───────────────────────────────────────── */
+    .lesson-nav {
+      display: flex; justify-content: space-between; gap: var(--s3);
+      margin-top: var(--s6);
+    }
+
+    @media (max-width: 900px) {
+      .lesson-layout { grid-template-columns: 1fr; }
+      .lesson-sidebar { position: static; }
+      .chat-card { height: 520px; max-height: 520px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-nav-mount"></div>
+
+<main class="page-wrap">
+  <div class="container">
+    <div id="lessonContent">
+      <div class="skeleton" style="height:400px;border-radius:16px;"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/klar.js"></script>
+<script>
+/* ── State ──────────────────────────────────────────────── */
+let currentUser   = null;
+let currentLesson = null;
+let chatHistory   = [];    // { role, content } — sent to API
+let isAiThinking  = false;
+
+/* ── Init ───────────────────────────────────────────────── */
+(async () => {
+  currentUser = await Klar.requireAuth();
+  if (!currentUser) return;
+
+  await Klar.renderAppNav('course');
+
+  const lessonId = new URLSearchParams(window.location.search).get('id');
+  if (!lessonId) { window.location.href = '/course.html'; return; }
+
+  const sb = Klar.getSupabase();
+
+  const [lessonRes, materialsRes, progressRes, chatRes] = await Promise.all([
+    sb.from('lessons').select('*').eq('id', lessonId).single(),
+    sb.from('lesson_materials').select('*').eq('lesson_id', lessonId).order('order_index'),
+    sb.from('user_progress').select('*').eq('user_id', currentUser.id).eq('lesson_id', lessonId).maybeSingle(),
+    sb.from('chat_messages').select('*').eq('user_id', currentUser.id).eq('lesson_id', lessonId).order('created_at').limit(60),
+  ]);
+
+  if (lessonRes.error || !lessonRes.data) {
+    document.getElementById('lessonContent').innerHTML = `<p class="body-md">Lesson not found.</p>`;
+    return;
+  }
+
+  currentLesson = lessonRes.data;
+  const materials = materialsRes.data || [];
+  const progress  = progressRes.data;
+  const savedMessages = chatRes.data || [];
+
+  // Mark lesson as in_progress if not already started
+  if (!progress || progress.status === 'not_started') {
+    await sb.from('user_progress').upsert({
+      user_id: currentUser.id,
+      lesson_id: lessonId,
+      status: 'in_progress',
+      started_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,lesson_id' });
+  }
+
+  // Restore chat history for API (role + content only)
+  chatHistory = savedMessages.map(m => ({ role: m.role, content: m.content }));
+
+  // Get adjacent lessons for navigation
+  const { data: allLessons } = await sb.from('lessons')
+    .select('id,lesson_number,title')
+    .eq('is_published', true)
+    .order('lesson_number');
+
+  const idx  = (allLessons || []).findIndex(l => l.id === lessonId);
+  const prev = allLessons?.[idx - 1] || null;
+  const next = allLessons?.[idx + 1] || null;
+
+  // Render
+  renderLesson(currentLesson, materials, progress, savedMessages, prev, next);
+})();
+
+/* ── Render ─────────────────────────────────────────────── */
+function renderLesson(lesson, materials, progress, savedMessages, prev, next) {
+  const pdfs  = materials.filter(m => m.type === 'pdf');
+  const links = materials.filter(m => m.type === 'link');
+  const notes = materials.filter(m => m.type === 'note');
+  const ytId  = Klar.extractYoutubeId(lesson.youtube_url);
+  const isComplete = progress?.status === 'completed';
+
+  document.title = `Lesson ${lesson.lesson_number}: ${lesson.title} — Klar`;
+
+  document.getElementById('lessonContent').innerHTML = `
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/course.html">Course</a>
+      <span class="breadcrumb-sep" aria-hidden="true">›</span>
+      <span>Lesson ${lesson.lesson_number}</span>
+    </nav>
+
+    <div class="lesson-layout">
+
+      <!-- ── Left: Main content ── -->
+      <div class="lesson-main">
+        <div class="lesson-header">
+          <div class="lesson-meta-row">
+            <span class="badge ${Klar.levelBadgeClass(lesson.level)}">${Klar.escHtml(lesson.level)}</span>
+            <span class="lesson-duration">~${lesson.duration_min || 45} min</span>
+            ${isComplete ? `<span class="badge badge-done">✓ Completed</span>` : ''}
+          </div>
+          <h1 class="lesson-title">Lesson ${lesson.lesson_number}: ${Klar.escHtml(lesson.title)}</h1>
+          ${lesson.description ? `<p class="lesson-description">${Klar.escHtml(lesson.description)}</p>` : ''}
+        </div>
+
+        <!-- Video -->
+        ${ytId ? `
+        <div class="lesson-section">
+          <div class="lesson-section__header">
+            <div class="lesson-section__title">
+              <div class="section-icon">🎥</div>
+              Video Lesson
+            </div>
+          </div>
+          <div class="lesson-section__body">
+            <div class="video-container">
+              <iframe
+                src="https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1"
+                title="Lesson ${lesson.lesson_number} video"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                loading="lazy">
+              </iframe>
+            </div>
+          </div>
+        </div>
+        ` : lesson.youtube_url ? `
+        <div class="lesson-section">
+          <div class="lesson-section__header">
+            <div class="lesson-section__title"><div class="section-icon">🎥</div>Video Lesson</div>
+          </div>
+          <div class="lesson-section__body">
+            <div class="video-container">
+              <div class="video-placeholder">
+                <div class="video-placeholder__icon">▶</div>
+                <div class="video-placeholder__text">Invalid YouTube URL — check the admin panel.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- PDFs -->
+        ${pdfs.length ? `
+        <div class="lesson-section">
+          <div class="lesson-section__header">
+            <div class="lesson-section__title">
+              <div class="section-icon">📄</div>
+              Learning Materials
+            </div>
+            <span class="label-sm">${pdfs.length} file${pdfs.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="lesson-section__body">
+            ${pdfs.map(m => `
+              <div class="material-item">
+                <div class="material-item__left">
+                  <div class="material-icon">📄</div>
+                  <div>
+                    <div class="material-title">${Klar.escHtml(m.title)}</div>
+                    ${m.description ? `<div class="material-desc">${Klar.escHtml(m.description)}</div>` : ''}
+                  </div>
+                </div>
+                <div class="material-actions">
+                  <a href="${Klar.escHtml(m.url)}" target="_blank" rel="noopener" class="btn btn--outline btn--sm">Open</a>
+                  <a href="${Klar.escHtml(m.url)}" download class="btn btn--ghost btn--sm">⬇</a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Notes -->
+        ${notes.length ? `
+        <div class="lesson-section">
+          <div class="lesson-section__header">
+            <div class="lesson-section__title"><div class="section-icon">📝</div>Lesson Notes</div>
+          </div>
+          <div class="lesson-section__body">
+            ${notes.map(m => `
+              <div style="margin-bottom:var(--s4);">
+                <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:var(--s2);">${Klar.escHtml(m.title)}</div>
+                ${m.description ? `<div class="body-md">${Klar.escHtml(m.description)}</div>` : ''}
+              </div>
+            `).join('<hr class="divider" style="margin:var(--s4) 0;">')}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Links -->
+        ${links.length ? `
+        <div class="lesson-section">
+          <div class="lesson-section__header">
+            <div class="lesson-section__title"><div class="section-icon">🔗</div>Useful Links</div>
+          </div>
+          <div class="lesson-section__body">
+            ${links.map(m => `
+              <div class="material-item">
+                <div class="material-item__left">
+                  <div class="material-icon">🌐</div>
+                  <div>
+                    <div class="material-title">${Klar.escHtml(m.title)}</div>
+                    ${m.description ? `<div class="material-desc">${Klar.escHtml(m.description)}</div>` : ''}
+                  </div>
+                </div>
+                <a href="${Klar.escHtml(m.url)}" target="_blank" rel="noopener" class="btn btn--outline btn--sm">Visit →</a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Mark complete -->
+        <div class="complete-section" id="completeSection">
+          ${isComplete ? `
+            <div style="font-size:28px;margin-bottom:var(--s3);">✅</div>
+            <h3>Lesson complete!</h3>
+            <p>You finished this lesson. Keep going.</p>
+            ${next ? `<a href="/lesson.html?id=${next.id}" class="btn btn--primary">Next: Lesson ${next.lesson_number} →</a>` : `<a href="/course.html" class="btn btn--primary">Back to course</a>`}
+          ` : `
+            <h3>Ready to move on?</h3>
+            <p>When you've watched the video, reviewed the materials and practiced with the AI tutor, mark this lesson as complete.</p>
+            <button class="btn btn--primary" onclick="markComplete()">Mark lesson complete ✓</button>
+          `}
+        </div>
+
+        <!-- Prev / Next nav -->
+        <div class="lesson-nav">
+          ${prev ? `<a href="/lesson.html?id=${prev.id}" class="btn btn--outline">← Lesson ${prev.lesson_number}</a>` : '<span></span>'}
+          ${next ? `<a href="/lesson.html?id=${next.id}" class="btn btn--outline">Lesson ${next.lesson_number} →</a>` : ''}
+        </div>
+      </div>
+
+      <!-- ── Right: AI Chat ── -->
+      <aside class="lesson-sidebar">
+        <div class="chat-card" id="chatCard">
+          <div class="chat-topbar">
+            <div class="chat-topbar__left">
+              <div class="chat-avatar-sm" aria-hidden="true">K</div>
+              <div>
+                <div class="chat-topbar__title">Klar Tutor</div>
+                <div class="chat-topbar__sub">German tutor · Lesson ${lesson.lesson_number}</div>
+              </div>
+            </div>
+            <div class="chat-online"><span class="chat-online-dot"></span> Online</div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            ${savedMessages.length === 0 ? `
+              <div class="chat-welcome">
+                <div class="chat-welcome__icon">👋</div>
+                <div class="chat-welcome__title">Hi, I'm your German tutor.</div>
+                <div class="chat-welcome__sub">Ask me anything about this lesson — grammar, vocabulary, or practice your German directly here.</div>
+              </div>
+            ` : savedMessages.map(renderMessage).join('')}
+          </div>
+
+          <div class="chat-input-area">
+            <form class="chat-form" id="chatForm" onsubmit="sendMessage(event)">
+              <textarea
+                class="chat-textarea"
+                id="chatInput"
+                placeholder="Ask a question or write in German…"
+                rows="1"
+                aria-label="Message to tutor"
+              ></textarea>
+              <button type="submit" class="chat-send" id="chatSendBtn" aria-label="Send message">↑</button>
+            </form>
+            <p class="chat-hint">Press Enter to send · Shift+Enter for new line</p>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  `;
+
+  // Auto-resize textarea + Enter to send
+  const textarea = document.getElementById('chatInput');
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  });
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(e);
+    }
+  });
+
+  // Scroll to bottom of chat
+  scrollChat();
+}
+
+/* ── Render a single message ────────────────────────────── */
+function renderMessage(msg) {
+  const isUser = msg.role === 'user';
+  return `
+    <div class="msg ${isUser ? 'msg--user' : 'msg--ai'}">
+      ${!isUser ? `<div class="msg-avatar msg-avatar--ai" aria-hidden="true">K</div>` : ''}
+      <div class="msg-bubble ${isUser ? 'msg-bubble--user' : 'msg-bubble--ai'}">
+        ${isUser ? Klar.escHtml(msg.content) : Klar.formatAIMessage(msg.content)}
+      </div>
+      ${isUser ? `<div class="msg-avatar msg-avatar--user" aria-hidden="true">Du</div>` : ''}
+    </div>
+  `;
+}
+
+/* ── Send message ───────────────────────────────────────── */
+async function sendMessage(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (isAiThinking) return;
+
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  // Clear input
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Add user message to UI
+  const messagesEl = document.getElementById('chatMessages');
+  const welcomeEl  = messagesEl.querySelector('.chat-welcome');
+  if (welcomeEl) welcomeEl.remove();
+
+  appendMessageToUI({ role: 'user', content: text });
+
+  // Save to Supabase
+  await saveMessage('user', text);
+
+  // Add to history
+  chatHistory.push({ role: 'user', content: text });
+
+  // Show typing indicator
+  const typingId = 'typing-' + Date.now();
+  messagesEl.insertAdjacentHTML('beforeend', `
+    <div id="${typingId}" class="msg msg--ai">
+      <div class="msg-avatar msg-avatar--ai" aria-hidden="true">K</div>
+      <div class="msg-bubble msg-bubble--ai">
+        <div class="msg-typing">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+  `);
+  scrollChat();
+
+  isAiThinking = true;
+  document.getElementById('chatSendBtn').disabled = true;
+
+  // Stream from server
+  let fullResponse = '';
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: chatHistory,
+        lessonContext: {
+          number: currentLesson.lesson_number,
+          title:  currentLesson.title,
+          level:  currentLesson.level,
+          description: currentLesson.description,
+        },
+        userId: currentUser?.id,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+    // Replace typing indicator with streaming bubble
+    const typingEl = document.getElementById(typingId);
+    const aiMsgId  = 'ai-msg-' + Date.now();
+    if (typingEl) {
+      typingEl.outerHTML = `
+        <div id="${aiMsgId}" class="msg msg--ai">
+          <div class="msg-avatar msg-avatar--ai" aria-hidden="true">K</div>
+          <div class="msg-bubble msg-bubble--ai" id="${aiMsgId}-text"></div>
+        </div>
+      `;
+    }
+    const bubbleEl = document.getElementById(`${aiMsgId}-text`);
+
+    // Parse SSE stream
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.text) {
+            fullResponse += parsed.text;
+            if (bubbleEl) bubbleEl.innerHTML = Klar.formatAIMessage(fullResponse);
+            scrollChat();
+          }
+          if (parsed.error) throw new Error(parsed.error);
+        } catch {}
+      }
+    }
+
+    // Save AI response to Supabase
+    if (fullResponse) {
+      await saveMessage('assistant', fullResponse);
+      chatHistory.push({ role: 'assistant', content: fullResponse });
+    }
+
+  } catch (err) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    appendMessageToUI({
+      role: 'assistant',
+      content: 'Sorry, something went wrong. Please try again.'
+    });
+    console.error('[Chat]', err);
+    Klar.toast('Could not reach the AI tutor. Check your connection.', 'error');
+  } finally {
+    isAiThinking = false;
+    document.getElementById('chatSendBtn').disabled = false;
+    document.getElementById('chatInput').focus();
+  }
+}
+
+function appendMessageToUI(msg) {
+  const el = document.getElementById('chatMessages');
+  el.insertAdjacentHTML('beforeend', renderMessage(msg));
+  scrollChat();
+}
+
+function scrollChat() {
+  const el = document.getElementById('chatMessages');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+async function saveMessage(role, content) {
+  try {
+    const sb = Klar.getSupabase();
+    await sb.from('chat_messages').insert({
+      user_id:   currentUser.id,
+      lesson_id: currentLesson.id,
+      role, content,
+    });
+  } catch (err) {
+    console.warn('[saveMessage]', err);
+  }
+}
+
+/* ── Mark lesson complete ───────────────────────────────── */
+async function markComplete() {
+  const sb = Klar.getSupabase();
+  const { error } = await sb.from('user_progress').upsert({
+    user_id:      currentUser.id,
+    lesson_id:    currentLesson.id,
+    status:       'completed',
+    completed_at: new Date().toISOString(),
+    started_at:   new Date().toISOString(),
+  }, { onConflict: 'user_id,lesson_id' });
+
+  if (error) { Klar.toast('Could not save progress. Try again.', 'error'); return; }
+
+  Klar.toast('Lesson complete! Well done.', 'success');
+
+  // Refresh complete section
+  const cs = document.getElementById('completeSection');
+  if (cs) {
+    const { data: allLessons } = await Klar.getSupabase()
+      .from('lessons').select('id,lesson_number').eq('is_published', true).order('lesson_number');
+    const idx  = (allLessons || []).findIndex(l => l.id === currentLesson.id);
+    const next = allLessons?.[idx + 1];
+    cs.innerHTML = `
+      <div style="font-size:28px;margin-bottom:var(--s3);">✅</div>
+      <h3>Lesson complete!</h3>
+      <p>Great work. Keep the momentum going.</p>
+      ${next ? `<a href="/lesson.html?id=${next.id}" class="btn btn--primary">Next: Lesson ${next.lesson_number} →</a>` : `<a href="/course.html" class="btn btn--primary">Back to course</a>`}
+    `;
+  }
+}
+</script>
+
+</body>
+</html>
