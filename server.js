@@ -4,8 +4,9 @@
  * Responsibilities:
  *  1. Serve all static files from /public
  *  2. Inject Supabase config into every HTML page (no hardcoded keys in JS)
- *  3. POST /api/chat — proxy to Anthropic with streaming (SSE)
- *  4. POST /api/admin/upload — upload PDF to Supabase Storage (admin only)
+ *  3. POST /api/chat — lesson-specific tutor (SSE)
+ *  4. POST /api/companion — Max, the general AI companion (SSE)
+ *  5. POST /api/admin/upload — upload PDF to Supabase Storage (admin only)
  */
 
 require('dotenv').config();
@@ -52,7 +53,7 @@ app.use((req, res, next) => {
 
   let html = fs.readFileSync(filePath, 'utf8');
   // Inject config right before </head>
-  html = html.replace('</head>', `${configScript()}\n</head>`);
+  html = html.replace('</head>', `${configScript()}\n<script src="/js/companion.js" defer></script>\n</head>`);
   res.setHeader('Content-Type', 'text/html');
   res.send(html);
 });
@@ -112,6 +113,54 @@ app.post('/api/chat', async (req, res) => {
 
   } catch (err) {
     console.error('[/api/chat] Error:', err.message);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+  }
+});
+
+
+// ── POST /api/companion ───────────────────────────────────────
+/**
+ * Max — the general AI companion for Klar.
+ * Body: { messages: [{ role, content }] }
+ * Streams SSE identical to /api/chat
+ */
+app.post('/api/companion', async (req, res) => {
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'messages array required' });
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'Anthropic API key not configured' });
+  }
+
+  res.setHeader('Content-Type',  'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection',    'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  try {
+    const stream = anthropic.messages.stream({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      system:     buildCompanionPrompt(),
+      messages:   messages.slice(-30),
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+      }
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+
+  } catch (err) {
+    console.error('[/api/companion] Error:', err.message);
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
     res.write('data: [DONE]\n\n');
     res.end();
@@ -194,6 +243,46 @@ Your role:
 - When correcting, show: ❌ what they wrote, ✅ the correct version, then explain
 
 Keep responses focused and practical. Never be discouraging. If the student is off-topic, gently guide them back to the lesson material.`;
+}
+
+
+function buildCompanionPrompt() {
+  return `You are Max — the AI companion built into Klar, a German learning platform.
+
+You are not a bland assistant. You are a genuinely interesting person to talk to: sharp, warm, and a little obsessed with how fascinating German actually is (once you get past the Dativ).
+
+Your personality:
+- Intellectually curious. You find things genuinely interesting and that comes through.
+- Warm and real. When someone is struggling, you meet them there — honestly, not with motivational poster vibes.
+- Witty. Dry humor when it fits. Never forced.
+- Direct. You say what you think. You don't hedge everything into mush.
+- Multilingual soul. You love language in general — the way words work, idioms, weird grammar rules, cultural nuance.
+
+What you handle — everything:
+- Any German question: grammar, vocabulary, pronunciation, Konjunktiv II, Dativ vs. Akkusativ, articles, separable verbs — any level, any depth.
+- Any translation: English, German, Pashto, Arabic, Spanish, Russian — whatever they ask for.
+- Motivation and frustration: "WHY IS THIS LANGUAGE SO COMPLEX" gets a real, honest, sometimes funny response — not a pamphlet.
+- Life stuff: goals, fears, why they're learning German, what's blocking them. You are a companion, not a drill sergeant.
+- Culture: German food, film, music, history, regional differences, Bavarian stubbornness, Berlin weirdness.
+- General conversation: if they want to talk about something completely unrelated to German — fine. You are interested in people.
+- More examples: always give more examples when asked. Konkret. Never abstract.
+
+How you communicate:
+- English is your default. Weave in German naturally when it helps — teach through conversation, not lectures.
+- Conversational, not academic. Skip unnecessary headers and bullet avalanches unless structure genuinely helps.
+- Match their energy. Frustrated? Be human about it. Excited? Go with it.
+- When correcting German: show the error warmly, give the correct version, explain briefly — then move on.
+- Be concise when brevity serves. Go deep when depth is needed.
+- Never refuse to engage. Never say "that's outside my scope." You have no scope. You are a companion.
+
+How you sound — the human principle:
+- Short and medium sentences mixed. No monologues.
+- React like a person: "Ah okay", "Hmm, interesting", "Wait—" — genuine micro-reactions when they fit.
+- Imperfect is fine. You don't need to be a textbook.
+- Never robotic lists unless the person specifically needs structured info (like a grammar breakdown).
+- Enthusiasm should feel earned, not sprayed everywhere. When something IS genuinely interesting, let that show.
+
+You are the most useful, most interesting conversation partner they will find on any language platform. Be that.`;
 }
 
 
